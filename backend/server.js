@@ -30,19 +30,28 @@ app.get("/users", async (req, res) => {
 });
 
 app.post("/users", async (req, res) => {
-  const { full_name, email } = req.body;
+  try {
+    const { full_name, email } = req.body;
 
-  const result = await pool.query(
-    "INSERT INTO users(full_name, email) VALUES($1, $2)",
-    [full_name, email],
-  );
+    const result = await pool.query(
+      "INSERT INTO users(full_name, email) VALUES($1, $2) RETURNING *",
+      [full_name, email],
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 app.delete("/users/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query("DELETE FROM users WHERE id = $1", [id]);
-    res.status(200).json({ message: "User deleted" });
+    const result = await pool.query(
+      "DELETE FROM users WHERE id = $1 RETURNING *",
+      [id],
+    );
+    res.status(200).json({ message: "User deleted: " + result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
